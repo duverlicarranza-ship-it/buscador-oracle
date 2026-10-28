@@ -1,0 +1,48 @@
+name: Buscar servidor Oracle
+
+# Corre cada hora; si ya hay una corrida activa, la nueva espera su turno.
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: buscar-servidor
+  cancel-in-progress: false
+
+permissions:
+  issues: write
+
+jobs:
+  buscar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install oci
+      - name: Preparar llaves de Oracle
+        env:
+          OCI_CONFIG: ${{ secrets.OCI_CONFIG }}
+          OCI_KEY: ${{ secrets.OCI_KEY }}
+          SSH_PUB: ${{ secrets.SSH_PUB }}
+        run: |
+          mkdir -p ~/.oci ~/.ssh
+          printf '%s\n' "$OCI_KEY" > ~/.oci/oci_api_key.pem
+          chmod 600 ~/.oci/oci_api_key.pem
+          printf '%s\n' "$OCI_CONFIG" | sed "s|^key_file=.*|key_file=$HOME/.oci/oci_api_key.pem|" > ~/.oci/config
+          chmod 600 ~/.oci/config
+          printf '%s\n' "$SSH_PUB" > ~/.ssh/oracle_bot.pub
+      - name: Reintentar hasta conseguir espacio
+        env:
+          MAX_MINUTOS: "340"
+        run: python crear_servidor.py
+      - name: Avisar por correo (abre un issue)
+        if: hashFiles('servidor.txt') != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title "Servidor Oracle creado" --body "$(cat servidor.txt)"
+          gh workflow disable "Buscar servidor Oracle"
