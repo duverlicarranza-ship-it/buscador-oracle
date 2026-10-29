@@ -17,8 +17,9 @@ REGION_CONFIG = oci.config.from_file()
 TENANCY = REGION_CONFIG["tenancy"]
 NOMBRE = "bot-ventas"
 NOMBRE_RED = "red-bot-ventas"
-# Primero el tamaño completo gratis; si no hay espacio, el mediano.
-TAMANOS = [(4, 24), (2, 12)]
+# Primero el tamaño completo gratis; si no hay espacio, el mediano y luego el chico
+# (se puede agrandar gratis hasta 4/24 más adelante).
+TAMANOS = [(4, 24), (2, 12), (1, 6)]
 DISCO_GB = 100
 ESPERA_SEG = 90
 # En GitHub Actions cada corrida dura máximo 6 h: salir antes y dejar que la siguiente continúe.
